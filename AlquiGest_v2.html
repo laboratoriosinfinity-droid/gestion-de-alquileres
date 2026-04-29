@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>AlquiGest</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<!-- Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --green:#16a34a;--green-bg:#dcfce7;--green-text:#14532d;
+    --red:#dc2626;--red-bg:#fee2e2;--red-text:#7f1d1d;
+    --yellow:#d97706;--yellow-bg:#fef3c7;--yellow-text:#78350f;
+    --blue:#2563eb;--blue-bg:#dbeafe;--blue-text:#1e3a8a;
+    --gray:#6b7280;--gray-bg:#f3f4f6;--gray-text:#111827;
+    --border:#e5e7eb;--surface:#ffffff;--page:#f9fafb;
+    --text:#111827;--text2:#6b7280;--radius:12px;--shadow:0 1px 3px rgba(0,0,0,.08);
+  }
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--page);color:var(--text);min-height:100vh;font-size:15px}
+  #root{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+  button{cursor:pointer;border:none;font-family:inherit;font-size:15px}
+  input,select,textarea{font-family:inherit;font-size:15px}
+
+  .nav{background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;display:flex;align-items:center;padding:0 8px;gap:4px}
+  .nav-title{flex:1;text-align:center;font-weight:700;font-size:17px;letter-spacing:-.3px;color:var(--text);padding:14px 0}
+  .nav-sync{background:none;color:var(--blue);padding:10px 6px;font-size:13px;font-weight:600;white-space:nowrap}
+  .nav-user{width:32px;height:32px;border-radius:50%;background:var(--blue-bg);color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;border:none;flex-shrink:0}
+
+  .tabs{display:flex;background:#fff;border-bottom:1px solid var(--border);overflow-x:auto;-ms-overflow-style:none;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex:1;min-width:60px;padding:12px 4px 10px;text-align:center;font-size:12px;font-weight:500;color:var(--text2);border-bottom:2px solid transparent;background:none;white-space:nowrap;transition:color .15s}
+  .tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+  .tab-icon{display:block;font-size:18px;margin-bottom:2px}
+
+  .content{flex:1;padding:16px;overflow-y:auto}
+
+  .card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+  .card-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .card-row:last-child{margin-bottom:0}
+
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;letter-spacing:.2px}
+  .badge-paid{background:var(--green-bg);color:var(--green-text)}
+  .badge-pending{background:var(--red-bg);color:var(--red-text)}
+  .badge-partial{background:var(--yellow-bg);color:var(--yellow-text)}
+  .badge-dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+  .dot-paid{background:var(--green)}.dot-pending{background:var(--red)}.dot-partial{background:var(--yellow)}
+
+  .prop-card{background:var(--surface);border-radius:16px;border:1px solid var(--border);padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
+  .prop-name{font-size:17px;font-weight:700;margin-bottom:2px}
+  .prop-tenant{font-size:13px;color:var(--text2);margin-bottom:12px}
+  .prop-amounts{display:flex;gap:10px;margin-bottom:12px}
+  .amount-box{flex:1;background:var(--gray-bg);border-radius:10px;padding:10px;text-align:center}
+  .amount-label{font-size:11px;color:var(--text2);margin-bottom:2px}
+  .amount-val{font-size:18px;font-weight:700}
+  .amount-val.green{color:var(--green)}.amount-val.red{color:var(--red)}.amount-val.yellow{color:var(--yellow)}
+  .prop-actions{display:flex;gap:8px}
+  .btn-pay{flex:1;background:var(--blue);color:#fff;padding:12px;border-radius:10px;font-weight:600;font-size:15px}
+  .btn-hist{background:var(--gray-bg);color:var(--gray-text);padding:12px 14px;border-radius:10px;font-weight:500;font-size:14px}
+
+  .form-group{margin-bottom:16px}
+  .form-label{display:block;font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+  .form-input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;background:#fff;color:var(--text);outline:none;transition:border-color .15s}
+  .form-input:focus{border-color:var(--blue)}
+  .form-select{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;background:#fff;color:var(--text);outline:none;appearance:none;-webkit-appearance:none}
+
+  .section-title{font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin:20px 0 10px}
+
+  .tramo-card{background:var(--gray-bg);border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid var(--border)}
+  .tramo-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .tramo-title{font-weight:600;font-size:14px}
+  .tramo-del{background:var(--red-bg);color:var(--red-text);padding:4px 10px;border-radius:8px;font-size:12px;font-weight:600}
+
+  .btn-primary{width:100%;background:var(--blue);color:#fff;padding:14px;border-radius:12px;font-size:16px;font-weight:700;margin-top:8px;letter-spacing:-.2px}
+  .btn-secondary{background:none;border:1.5px solid var(--border);color:var(--text);padding:12px;border-radius:10px;font-size:14px;font-weight:600;width:100%}
+  .btn-add{background:var(--blue-bg);color:var(--blue);padding:10px 14px;border-radius:10px;font-size:14px;font-weight:600;width:100%;margin-top:6px}
+  .btn-danger{background:var(--red-bg);color:var(--red-text);padding:12px;border-radius:10px;font-size:14px;font-weight:600;width:100%;margin-top:8px}
+  .btn-google{width:100%;background:#fff;border:1.5px solid var(--border);color:var(--text);padding:13px;border-radius:12px;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px}
+  .btn-google-logo{width:20px;height:20px}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:flex-end}
+  .modal{background:#fff;border-radius:20px 20px 0 0;width:100%;max-height:90vh;overflow-y:auto;padding:20px 16px 36px}
+  .modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 18px}
+  .modal-title{font-size:19px;font-weight:700;margin-bottom:18px}
+
+  .stats-row{display:flex;gap:10px;margin-bottom:16px}
+  .stat-box{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center}
+  .stat-num{font-size:22px;font-weight:800;margin-bottom:2px}
+  .stat-label{font-size:11px;color:var(--text2)}
+
+  .var-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px}
+  .var-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .var-title{font-weight:700;font-size:15px}
+  .var-fields{display:flex;flex-direction:column;gap:8px}
+  .var-row{display:flex;align-items:center;gap:8px}
+  .var-label{font-size:13px;color:var(--text2);flex:1}
+  .var-input{width:110px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;text-align:right}
+
+  .month-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+  .month-row:last-child{border-bottom:none}
+
+  .empty{text-align:center;padding:50px 20px;color:var(--text2)}
+  .empty-icon{font-size:48px;margin-bottom:12px}
+  .empty-msg{font-size:16px;font-weight:500;margin-bottom:6px;color:var(--text)}
+  .empty-sub{font-size:14px}
+
+  .alert{padding:12px 14px;border-radius:10px;font-size:14px;margin-bottom:12px}
+  .alert-info{background:var(--blue-bg);color:var(--blue-text)}
+  .alert-success{background:var(--green-bg);color:var(--green-text)}
+  .alert-warn{background:var(--yellow-bg);color:var(--yellow-text)}
+
+  .chip{display:inline-block;background:var(--gray-bg);color:var(--text2);padding:3px 10px;border-radius:20px;font-size:12px;margin-right:4px;margin-bottom:4px}
+
+  .fab{position:fixed;bottom:24px;right:20px;width:56px;height:56px;background:var(--blue);color:#fff;border-radius:28px;font-size:26px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(37,99,235,.4);z-index:150;border:none;cursor:pointer}
+
+  .divider{height:1px;background:var(--border);margin:16px 0}
+
+  .tag{display:inline-block;font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.4px}
+  .tag-fijo{background:#e0f2fe;color:#0c4a6e}
+  .tag-escalonado{background:#f3e8ff;color:#581c87}
+  .tag-ajuste{background:var(--yellow-bg);color:var(--yellow-text)}
+
+  /* SYNC STATUS */
+  .sync-bar{background:#fff;border-bottom:1px solid var(--border);padding:6px 16px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2)}
+  .sync-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .sync-dot.ok{background:var(--green)}
+  .sync-dot.warn{background:var(--yellow)}
+  .sync-dot.off{background:var(--gray)}
+  .sync-dot.loading{background:var(--blue);animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  /* DRIVE SETUP */
+  .setup-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px}
+  .setup-step{display:flex;gap:12px;margin-bottom:14px;align-items:flex-start}
+  .setup-num{width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;margin-top:1px}
+  .setup-text{font-size:14px;line-height:1.5;color:var(--text)}
+  .setup-text strong{font-weight:700}
+  .setup-text a{color:var(--blue);text-decoration:none}
+  .code-block{background:var(--gray-bg);border-radius:8px;padding:10px 12px;font-family:monospace;font-size:13px;word-break:break-all;margin-top:6px;color:var(--text)}
+
+  /* SHARE */
+  .share-card{background:var(--blue-bg);border:1px solid #bfdbfe;border-radius:14px;padding:16px;margin-bottom:12px}
+  .share-title{font-weight:700;font-size:15px;color:var(--blue-text);margin-bottom:8px}
+  .share-desc{font-size:13px;color:var(--blue-text);line-height:1.5;margin-bottom:12px}
+  .share-file{background:#fff;border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text2);font-family:monospace;word-break:break-all;margin-bottom:10px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// CONFIGURACIÓN — REEMPLAZÁ ESTOS VALORES CON LOS TUYOS
+// ═══════════════════════════════════════════════════════════════════
+const CONFIG = {
+  CLIENT_ID: '306802428190-2trbo3t0gf8uil59a48hb2a98o4dgfr2.apps.googleusercontent.com',        // Pegá aquí tu Google Client ID
+  SCOPES: 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.file',
+  FILE_NAME: 'alquigest_datos.json',
+  // Para compartir: todos los que usen el mismo CLIENT_ID y el mismo archivo comparten datos
+};
+
+const {useState,useEffect,useCallback,useRef}=React;
+const h=React.createElement;
+
+const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const NOW=new Date();
+const fmt=(n)=>n==null?'—':'$'+Math.round(n).toLocaleString('es-AR');
+const mesKey=(y,m)=>`${y}-${String(m+1).padStart(2,'0')}`;
+const mesLabel=(y,m)=>MESES[m]+' '+y;
+const uid=()=>Math.random().toString(36).slice(2,9);
+
+function generarMeses(fechaInicio){
+  const inicio=new Date(fechaInicio+'T00:00:00');
+  const meses=[];
+  const start=new Date(NOW.getFullYear(),4,1);
+  const end=new Date(NOW.getFullYear()+1,NOW.getMonth()+1,1);
+  let cur=new Date(Math.max(inicio.getTime(),start.getTime()));
+  cur=new Date(cur.getFullYear(),cur.getMonth(),1);
+  while(cur<=end){
+    meses.push({year:cur.getFullYear(),month:cur.getMonth(),key:mesKey(cur.getFullYear(),cur.getMonth())});
+    cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);
+  }
+  return meses;
+}
+
+function calcularMonto(alquiler,year,month,variables){
+  const contrato=alquiler.contrato;
+  const varMes=variables[mesKey(year,month)]||{};
+  if(contrato.tipo==='fijo'){
+    return aplicarAjuste(contrato.montoBase,contrato.ajuste,varMes);
+  }
+  if(contrato.tipo==='escalonado'){
+    const inicio=new Date(alquiler.fechaInicio+'T00:00:00');
+    const mesRelativo=(year-inicio.getFullYear())*12+(month-inicio.getMonth())+1;
+    const tramo=contrato.tramos.find(t=>mesRelativo>=t.mesDesde&&mesRelativo<=t.mesHasta);
+    if(!tramo)return null;
+    return aplicarAjuste(tramo.montoBase,tramo.ajuste,varMes);
+  }
+  return null;
+}
+
+function aplicarAjuste(base,ajuste,varMes){
+  if(!ajuste||ajuste==='ninguno')return base;
+  if(ajuste==='dolar'){const v=varMes.dolar;return v?base*v:base}
+  if(ajuste==='nafta'){const v=varMes.nafta;return v?base*v:base}
+  if(ajuste==='ipc'){const v=varMes.ipc;return v?base*(1+v/100):base}
+  return base;
+}
+
+function estadoPago(alqId,mk,pagos,montoEsperado){
+  const pago=pagos[`${alqId}_${mk}`];
+  if(!pago)return{estado:'pendiente',pagado:0,esperado:montoEsperado,diferencia:-(montoEsperado||0)};
+  const diff=pago.monto-(montoEsperado||0);
+  const estado=diff>=0?'pagado':(pago.monto>0?'parcial':'pendiente');
+  return{estado,pagado:pago.monto,esperado:montoEsperado,diferencia:diff,fecha:pago.fecha};
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// GOOGLE DRIVE SERVICE
+// ═══════════════════════════════════════════════════════════════════
+class DriveService {
+  constructor(){this.token=null;this.fileId=null}
+
+  hasClientId(){return !!CONFIG.CLIENT_ID && CONFIG.CLIENT_ID.length > 10}
+
+  async signIn(){
+    return new Promise((resolve,reject)=>{
+      if(!window.google){reject(new Error('Google no cargó'));return}
+      const client=window.google.accounts.oauth2.initTokenClient({
+        client_id:CONFIG.CLIENT_ID,
+        scope:CONFIG.SCOPES,
+        callback:(resp)=>{
+          if(resp.error){reject(new Error(resp.error));return}
+          this.token=resp.access_token;
+          resolve(resp);
+        }
+      });
+      client.requestAccessToken();
+    });
+  }
+
+  signOut(){this.token=null;this.fileId=null}
+
+  async findFile(){
+    const r=await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=name='${CONFIG.FILE_NAME}'+and+trashed=false&spaces=drive&fields=files(id,name,modifiedTime)`,
+      {headers:{Authorization:`Bearer ${this.token}`}}
+    );
+    const data=await r.json();
+    if(data.files&&data.files.length>0){this.fileId=data.files[0].id;return data.files[0]}
+    return null;
+  }
+
+  async load(){
+    const file=await this.findFile();
+    if(!file)return null;
+    const r=await fetch(
+      `https://www.googleapis.com/drive/v3/files/${this.fileId}?alt=media`,
+      {headers:{Authorization:`Bearer ${this.token}`}}
+    );
+    const text=await r.text();
+    try{return JSON.parse(text)}catch{return null}
+  }
+
+  async save(data){
+    const body=JSON.stringify(data);
+    const meta=JSON.stringify({name:CONFIG.FILE_NAME,mimeType:'application/json'});
+    if(this.fileId){
+      await fetch(
+        `https://www.googleapis.com/upload/drive/v3/files/${this.fileId}?uploadType=multipart`,
+        {method:'PATCH',headers:{Authorization:`Bearer ${this.token}`,'Content-Type':`multipart/related; boundary=bound`},
+         body:`--bound\r\nContent-Type: application/json\r\n\r\n${meta}\r\n--bound\r\nContent-Type: application/json\r\n\r\n${body}\r\n--bound--`}
+      );
+    } else {
+      const r=await fetch(
+        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+        {method:'POST',headers:{Authorization:`Bearer ${this.token}`,'Content-Type':`multipart/related; boundary=bound`},
+         body:`--bound\r\nContent-Type: application/json\r\n\r\n${meta}\r\n--bound\r\nContent-Type: application/json\r\n\r\n${body}\r\n--bound--`}
+      );
+      const d=await r.json();
+      this.fileId=d.id;
+    }
+    return true;
+  }
+
+  async makeShared(){
+    if(!this.fileId)return;
+    await fetch(
+      `https://www.googleapis.com/drive/v3/files/${this.fileId}/permissions`,
+      {method:'POST',headers:{Authorization:`Bearer ${this.token}`,'Content-Type':'application/json'},
+       body:JSON.stringify({role:'writer',type:'anyone'})}
+    );
+    const r=await fetch(
+      `https://www.googleapis.com/drive/v3/files/${this.fileId}?fields=webViewLink,id`,
+      {headers:{Authorization:`Bearer ${this.token}`}}
+    );
+    return await r.json();
+  }
+}
+const drive=new DriveService();
+
+// ═══════════════════════════════════════════════════════════════════
+// STORE con Drive sync
+// ═══════════════════════════════════════════════════════════════════
+function useStore(){
+  const[alquileres,setAlquileres]=useState(()=>{try{return JSON.parse(localStorage.getItem('alq_alquileres')||'[]')}catch{return[]}});
+  const[pagos,setPagos]=useState(()=>{try{return JSON.parse(localStorage.getItem('alq_pagos')||'{}')}catch{return{}}});
+  const[variables,setVariables]=useState(()=>{try{return JSON.parse(localStorage.getItem('alq_variables')||'{}')}catch{return{}}});
+  const[driveUser,setDriveUser]=useState(null);
+  const[syncStatus,setSyncStatus]=useState('off'); // off | loading | ok | error
+  const[lastSync,setLastSync]=useState(null);
+  const[driveFileId,setDriveFileId]=useState(null);
+  const pendingSync=useRef(null);
+
+  const localSave=(a,p,v)=>{
+    localStorage.setItem('alq_alquileres',JSON.stringify(a));
+    localStorage.setItem('alq_pagos',JSON.stringify(p));
+    localStorage.setItem('alq_variables',JSON.stringify(v));
+  };
+
+  const pushToDrive=useCallback(async(a,p,v)=>{
+    if(!drive.token)return;
+    setSyncStatus('loading');
+    try{
+      await drive.save({alquileres:a,pagos:p,variables:v,ts:Date.now()});
+      setSyncStatus('ok');setLastSync(new Date());
+    }catch{setSyncStatus('error')}
+  },[]);
+
+  const schedulePush=useCallback((a,p,v)=>{
+    clearTimeout(pendingSync.current);
+    pendingSync.current=setTimeout(()=>pushToDrive(a,p,v),2000);
+  },[pushToDrive]);
+
+  const applyRemote=(data)=>{
+    if(!data)return;
+    setAlquileres(data.alquileres||[]);setPagos(data.pagos||{});setVariables(data.variables||{});
+    localSave(data.alquileres||[],data.pagos||{},data.variables||{});
+  };
+
+  const signIn=async()=>{
+    setSyncStatus('loading');
+    try{
+      await drive.signIn();
+      // Get user info
+      const r=await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:`Bearer ${drive.token}`}});
+      const u=await r.json();
+      setDriveUser(u);
+      // Load from Drive (Drive wins over local)
+      const remote=await drive.load();
+      if(remote&&remote.ts){
+        const localTs=parseInt(localStorage.getItem('alq_ts')||'0');
+        if(remote.ts>=localTs){applyRemote(remote)}
+        else{await pushToDrive(alquileres,pagos,variables)}
+      } else {
+        // First time — push local data
+        await pushToDrive(alquileres,pagos,variables);
+      }
+      if(drive.fileId)setDriveFileId(drive.fileId);
+      setSyncStatus('ok');setLastSync(new Date());
+    }catch(e){setSyncStatus('error');console.error(e)}
+  };
+
+  const signOut=()=>{drive.signOut();setDriveUser(null);setSyncStatus('off');setLastSync(null)};
+
+  const pullFromDrive=async()=>{
+    if(!drive.token)return;
+    setSyncStatus('loading');
+    try{
+      const remote=await drive.load();
+      applyRemote(remote);
+      setSyncStatus('ok');setLastSync(new Date());
+    }catch{setSyncStatus('error')}
+  };
+
+  // Data mutations
+  const mut=(fn)=>{
+    let na=alquileres,np=pagos,nv=variables;
+    fn((a,p,v)=>{na=a;np=p;nv=v});
+    setAlquileres(na);setPagos(np);setVariables(nv);
+    localSave(na,np,nv);
+    localStorage.setItem('alq_ts',Date.now().toString());
+    schedulePush(na,np,nv);
+  };
+
+  const addAlquiler=(a)=>mut((set)=>set([...alquileres,{...a,id:uid()}],pagos,variables));
+  const updateAlquiler=(id,a)=>mut((set)=>set(alquileres.map(x=>x.id===id?{...a,id}:x),pagos,variables));
+  const deleteAlquiler=(id)=>{
+    const newP={...pagos};Object.keys(newP).filter(k=>k.startsWith(id+'_')).forEach(k=>delete newP[k]);
+    mut((set)=>set(alquileres.filter(x=>x.id!==id),newP,variables));
+  };
+  const registrarPago=(alqId,mk,monto,montoEsperado)=>{
+    const k=`${alqId}_${mk}`;
+    mut((set)=>set(alquileres,{...pagos,[k]:{monto:parseFloat(monto),montoEsperado,fecha:new Date().toISOString().slice(0,10)}},variables));
+  };
+  const deletePago=(alqId,mk)=>{
+    const k=`${alqId}_${mk}`;const np={...pagos};delete np[k];
+    mut((set)=>set(alquileres,np,variables));
+  };
+  const setVar=(mk,field,val)=>{
+    mut((set)=>set(alquileres,pagos,{...variables,[mk]:{...(variables[mk]||{}),[field]:parseFloat(val)||0}}));
+  };
+
+  return{alquileres,pagos,variables,addAlquiler,updateAlquiler,deleteAlquiler,registrarPago,deletePago,setVar,
+         driveUser,syncStatus,lastSync,driveFileId,signIn,signOut,pullFromDrive,drive};
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// COMPONENTES UI
+// ═══════════════════════════════════════════════════════════════════
+function Badge({estado}){
+  const map={pagado:['badge-paid','dot-paid','✓ Pagado'],parcial:['badge-partial','dot-partial','~ Parcial'],pendiente:['badge-pending','dot-pending','✗ Pendiente']};
+  const[cls,dot,label]=map[estado]||map.pendiente;
+  return h('span',{className:`badge ${cls}`},h('span',{className:`badge-dot ${dot}`}),label);
+}
+
+function SyncBar({status,lastSync,user,onPull}){
+  const msgs={off:'Sin sincronización',loading:'Sincronizando...',ok:'Sincronizado con Drive',error:'Error al sincronizar'};
+  const ts=lastSync?` · ${lastSync.getHours()}:${String(lastSync.getMinutes()).padStart(2,'0')}`:'';
+  return h('div',{className:'sync-bar'},
+    h('span',{className:`sync-dot ${status}`}),
+    h('span',{style:{flex:1}},msgs[status]+(status==='ok'?ts:'')),
+    user&&status==='ok'&&h('button',{onClick:onPull,style:{background:'none',border:'none',color:'var(--blue)',fontSize:12,fontWeight:600,cursor:'pointer',padding:'0 4px'}},'↓ Actualizar')
+  );
+}
+
+function ModalPago({alquiler,mes,montoEsperado,pagoActual,onClose,onSave,onDelete}){
+  const[monto,setMonto]=useState(pagoActual?String(pagoActual.monto):montoEsperado?String(Math.round(montoEsperado)):'');
+  const[confirmDel,setConfirmDel]=useState(false);
+  return h('div',{className:'modal-overlay',onClick:(e)=>{if(e.target===e.currentTarget)onClose()}},
+    h('div',{className:'modal'},
+      h('div',{className:'modal-handle'}),
+      h('div',{className:'modal-title'},'Registrar Pago'),
+      h('div',{className:'chip'},mesLabel(mes.year,mes.month)),
+      h('div',{className:'chip'},alquiler.propiedad),
+      h('div',{style:{marginTop:16}},
+        h('div',{className:'form-group'},
+          h('label',{className:'form-label'},'Monto pagado ($)'),
+          h('input',{className:'form-input',type:'number',inputMode:'numeric',placeholder:'0',value:monto,onChange:(e)=>setMonto(e.target.value),autoFocus:true})
+        ),
+        montoEsperado&&h('div',{className:'alert alert-info'},`Monto esperado: ${fmt(montoEsperado)}`),
+        monto&&montoEsperado&&h('div',{className:`alert ${parseFloat(monto)>=montoEsperado?'alert-success':'alert-info'}`},
+          parseFloat(monto)>=montoEsperado
+            ?`✓ Completo${parseFloat(monto)>montoEsperado?' (favor: '+fmt(parseFloat(monto)-montoEsperado)+')':''}`
+            :`Falta: ${fmt(montoEsperado-parseFloat(monto))}`
+        ),
+        h('button',{className:'btn-primary',onClick:()=>{if(monto&&parseFloat(monto)>0){onSave(parseFloat(monto));onClose()}}},'Guardar Pago'),
+        pagoActual&&!confirmDel&&h('button',{className:'btn-danger',onClick:()=>setConfirmDel(true)},'Eliminar pago'),
+        confirmDel&&h('div',{style:{marginTop:8}},
+          h('p',{style:{fontSize:13,color:'var(--red)',marginBottom:8,textAlign:'center'}},'¿Eliminar este pago?'),
+          h('div',{style:{display:'flex',gap:8}},
+            h('button',{className:'btn-secondary',style:{flex:1},onClick:()=>setConfirmDel(false)},'Cancelar'),
+            h('button',{className:'btn-danger',style:{marginTop:0,flex:1},onClick:()=>{onDelete();onClose()}},'Eliminar')
+          )
+        ),
+        h('button',{className:'btn-secondary',style:{marginTop:8},onClick:onClose},'Cancelar')
+      )
+    )
+  );
+}
+
+function FormAlquiler({initial,onSave,onDelete,onClose}){
+  const[d,setD]=useState(initial||{
+    propiedad:'',inquilino:'',fechaInicio:new Date().toISOString().slice(0,10),
+    contrato:{tipo:'fijo',montoBase:'',ajuste:'ninguno',frecuenciaAjuste:1,
+      tramos:[{id:uid(),mesDesde:1,mesHasta:6,montoBase:'',ajuste:'ninguno'}]}
+  });
+  const[confirmDel,setConfirmDel]=useState(false);
+  const up=(path,val)=>{setD(prev=>{const n=JSON.parse(JSON.stringify(prev));let obj=n;const parts=path.split('.');for(let i=0;i<parts.length-1;i++)obj=obj[parts[i]];obj[parts[parts.length-1]]=val;return n})};
+  const addTramo=()=>{const last=d.contrato.tramos[d.contrato.tramos.length-1];const desde=last?last.mesHasta+1:1;setD(p=>{const n=JSON.parse(JSON.stringify(p));n.contrato.tramos.push({id:uid(),mesDesde:desde,mesHasta:desde+5,montoBase:'',ajuste:'ninguno'});return n})};
+  const delTramo=(id)=>setD(p=>{const n=JSON.parse(JSON.stringify(p));n.contrato.tramos=n.contrato.tramos.filter(t=>t.id!==id);return n});
+  const upTramo=(id,field,val)=>setD(p=>{const n=JSON.parse(JSON.stringify(p));const t=n.contrato.tramos.find(t=>t.id===id);if(t)t[field]=val;return n});
+  const valid=d.propiedad.trim()&&d.inquilino.trim()&&d.fechaInicio&&(d.contrato.tipo==='fijo'?d.contrato.montoBase:d.contrato.tramos.every(t=>t.montoBase));
+
+  return h('div',{className:'modal-overlay',onClick:(e)=>{if(e.target===e.currentTarget)onClose()}},
+    h('div',{className:'modal'},
+      h('div',{className:'modal-handle'}),
+      h('div',{className:'modal-title'},initial?'Editar alquiler':'Nuevo alquiler'),
+      h('div',{className:'form-group'},h('label',{className:'form-label'},'Propiedad'),h('input',{className:'form-input',placeholder:'Ej: Depto Belgrano 3B',value:d.propiedad,onChange:(e)=>up('propiedad',e.target.value)})),
+      h('div',{className:'form-group'},h('label',{className:'form-label'},'Inquilino'),h('input',{className:'form-input',placeholder:'Nombre completo',value:d.inquilino,onChange:(e)=>up('inquilino',e.target.value)})),
+      h('div',{className:'form-group'},h('label',{className:'form-label'},'Inicio del contrato'),h('input',{className:'form-input',type:'date',value:d.fechaInicio,onChange:(e)=>up('fechaInicio',e.target.value)})),
+      h('div',{className:'form-group'},
+        h('label',{className:'form-label'},'Tipo de contrato'),
+        h('select',{className:'form-select',value:d.contrato.tipo,onChange:(e)=>up('contrato.tipo',e.target.value)},
+          h('option',{value:'fijo'},'Monto fijo'),h('option',{value:'escalonado'},'Escalonado por tramos')
+        )
+      ),
+      d.contrato.tipo==='fijo'&&h('div',null,
+        h('div',{className:'form-group'},h('label',{className:'form-label'},'Monto base ($)'),h('input',{className:'form-input',type:'number',inputMode:'numeric',placeholder:'0',value:d.contrato.montoBase,onChange:(e)=>up('contrato.montoBase',e.target.value)})),
+        h('div',{className:'form-group'},h('label',{className:'form-label'},'Tipo de ajuste'),
+          h('select',{className:'form-select',value:d.contrato.ajuste,onChange:(e)=>up('contrato.ajuste',e.target.value)},
+            h('option',{value:'ninguno'},'Sin ajuste'),h('option',{value:'ipc'},'IPC'),h('option',{value:'dolar'},'Dólar'),h('option',{value:'nafta'},'Litros de nafta')
+          )
+        )
+      ),
+      d.contrato.tipo==='escalonado'&&h('div',null,
+        h('p',{className:'section-title'},'Tramos'),
+        d.contrato.tramos.map((t,i)=>h('div',{key:t.id,className:'tramo-card'},
+          h('div',{className:'tramo-header'},h('span',{className:'tramo-title'},'Tramo '+(i+1)),d.contrato.tramos.length>1&&h('button',{className:'tramo-del',onClick:()=>delTramo(t.id)},'✕')),
+          h('div',{style:{display:'flex',gap:8,marginBottom:10}},
+            h('div',{style:{flex:1}},h('label',{className:'form-label'},'Mes desde'),h('input',{className:'form-input',type:'number',inputMode:'numeric',min:1,value:t.mesDesde,onChange:(e)=>upTramo(t.id,'mesDesde',parseInt(e.target.value)||1)})),
+            h('div',{style:{flex:1}},h('label',{className:'form-label'},'Mes hasta'),h('input',{className:'form-input',type:'number',inputMode:'numeric',min:1,value:t.mesHasta,onChange:(e)=>upTramo(t.id,'mesHasta',parseInt(e.target.value)||12)}))
+          ),
+          h('div',{className:'form-group'},h('label',{className:'form-label'},'Monto base ($)'),h('input',{className:'form-input',type:'number',inputMode:'numeric',placeholder:'0',value:t.montoBase,onChange:(e)=>upTramo(t.id,'montoBase',e.target.value)})),
+          h('div',{className:'form-group'},h('label',{className:'form-label'},'Ajuste'),
+            h('select',{className:'form-select',value:t.ajuste,onChange:(e)=>upTramo(t.id,'ajuste',e.target.value)},
+              h('option',{value:'ninguno'},'Sin ajuste'),h('option',{value:'ipc'},'IPC'),h('option',{value:'dolar'},'Dólar'),h('option',{value:'nafta'},'Litros de nafta')
+            )
+          )
+        )),
+        h('button',{className:'btn-add',onClick:addTramo},'+ Agregar tramo')
+      ),
+      h('div',{style:{height:16}}),
+      h('button',{className:'btn-primary',disabled:!valid,style:{opacity:valid?1:.5},onClick:()=>{if(valid){
+        const data=JSON.parse(JSON.stringify(d));
+        if(data.contrato.tipo==='fijo')data.contrato.montoBase=parseFloat(data.contrato.montoBase)||0;
+        else data.contrato.tramos.forEach(t=>{t.montoBase=parseFloat(t.montoBase)||0});
+        onSave(data);onClose();
+      }}},'Guardar'),
+      initial&&!confirmDel&&h('button',{className:'btn-danger',onClick:()=>setConfirmDel(true)},'Eliminar alquiler'),
+      confirmDel&&h('div',{style:{marginTop:8}},
+        h('p',{style:{fontSize:13,color:'var(--red)',marginBottom:8,textAlign:'center'}},'¿Eliminar alquiler y todos sus pagos?'),
+        h('div',{style:{display:'flex',gap:8}},
+          h('button',{className:'btn-secondary',style:{flex:1},onClick:()=>setConfirmDel(false)},'Cancelar'),
+          h('button',{className:'btn-danger',style:{marginTop:0,flex:1},onClick:()=>{onDelete();onClose()}},'Eliminar')
+        )
+      ),
+      h('button',{className:'btn-secondary',style:{marginTop:8},onClick:onClose},'Cancelar')
+    )
+  );
+}
+
+function Historial({alquiler,pagos,variables,onClose,onRegistrar}){
+  const meses=generarMeses(alquiler.fechaInicio);
+  const mesActualKey=mesKey(NOW.getFullYear(),NOW.getMonth());
+  return h('div',{className:'modal-overlay',onClick:(e)=>{if(e.target===e.currentTarget)onClose()}},
+    h('div',{className:'modal'},
+      h('div',{className:'modal-handle'}),
+      h('div',{className:'modal-title'},alquiler.propiedad),
+      h('p',{style:{fontSize:14,color:'var(--text2)',marginBottom:16}},alquiler.inquilino),
+      meses.map(m=>{
+        const esp=calcularMonto(alquiler,m.year,m.month,variables);
+        const p=pagos[`${alquiler.id}_${m.key}`];
+        const est=estadoPago(alquiler.id,m.key,pagos,esp);
+        const esActual=m.key===mesActualKey;
+        return h('div',{key:m.key,className:'month-row',style:{opacity:esp==null?.4:1}},
+          h('div',null,
+            h('div',{style:{fontSize:14,fontWeight:esActual?700:500}},mesLabel(m.year,m.month)+(esActual?' ◂':'')),
+            h('div',{style:{marginTop:4}},h(Badge,{estado:est.estado}))
+          ),
+          h('div',{style:{textAlign:'right'}},
+            h('div',{style:{fontSize:14,fontWeight:700}},esp==null?'—':fmt(esp)),
+            p&&h('div',{style:{fontSize:13,color:'var(--text2)'}},`Pagado: ${fmt(p.monto)}`),
+            h('button',{style:{marginTop:6,background:'var(--blue-bg)',color:'var(--blue)',border:'none',padding:'5px 12px',borderRadius:8,fontSize:13,fontWeight:600,cursor:'pointer'},onClick:()=>onRegistrar(m,esp,p)},p?'Editar':'Pagar')
+          )
+        );
+      }),
+      h('button',{className:'btn-secondary',style:{marginTop:16},onClick:onClose},'Cerrar')
+    )
+  );
+}
+
+// ── PESTAÑA DRIVE ──────────────────────────────────────────────────
+function TabDrive({driveUser,syncStatus,lastSync,driveFileId,signIn,signOut,pullFromDrive,drive}){
+  const[shareInfo,setShareInfo]=useState(null);
+  const[sharing,setSharing]=useState(false);
+  const hasClientId=drive.hasClientId();
+
+  const handleShare=async()=>{
+    setSharing(true);
+    try{const info=await drive.makeShared();setShareInfo(info)}
+    catch(e){alert('Error al compartir: '+e.message)}
+    setSharing(false);
+  };
+
+  if(!hasClientId) return h('div',{className:'content'},
+    h('p',{className:'section-title'},'Conectar con Google Drive'),
+    h('div',{className:'alert alert-warn'},'Necesitás configurar un Google Client ID. Seguí estos pasos — son simples y gratuitos.'),
+    h('div',{className:'setup-card'},
+      h('div',{className:'setup-step'},
+        h('div',{className:'setup-num'},'1'),
+        h('div',{className:'setup-text'},h('strong','Entrá a Google Cloud Console: '),h('a',{href:'https://console.cloud.google.com',target:'_blank'},'console.cloud.google.com'))
+      ),
+      h('div',{className:'setup-step'},
+        h('div',{className:'setup-num'},'2'),
+        h('div',{className:'setup-text'},h('strong','Creá un proyecto nuevo '),'(botón "New Project", nombre cualquiera como "AlquiGest")')
+      ),
+      h('div',{className:'setup-step'},
+        h('div',{className:'setup-num'},'3'),
+        h('div',{className:'setup-text'},h('strong','Activá la API de Google Drive: '),'Buscá "Google Drive API" y hacé click en Enable')
+      ),
+      h('div',{className:'setup-step'},
+        h('div',{className:'setup-num'},'4'),
+        h('div',{className:'setup-text'},
+          h('strong','Creá credenciales OAuth: '),'Andá a APIs & Services → Credentials → Create Credentials → OAuth Client ID → Web Application',
+          h('div',{className:'code-block',style:{marginTop:8}},'Authorized JavaScript origins:',h('br'),window.location.origin||'file://'),
+        )
+      ),
+      h('div',{className:'setup-step'},
+        h('div',{className:'setup-num'},'5'),
+        h('div',{className:'setup-text'},h('strong','Copiá el Client ID '),'(termina en .apps.googleusercontent.com)')
+      ),
+      h('div',{className:'setup-step'},
+        h('div',{className:'setup-num'},'6'),
+        h('div',{className:'setup-text'},
+          h('strong','Abrí el archivo HTML con el editor de texto '),
+          'y reemplazá ',h('code',{style:{background:'var(--gray-bg)',padding:'1px 5px',borderRadius:4,fontSize:13}},`CLIENT_ID: ''`),
+          ' con tu ID:',
+          h('div',{className:'code-block',style:{marginTop:6}},"CLIENT_ID: 'TU_ID_AQUI.apps.googleusercontent.com'")
+        )
+      )
+    ),
+    h('div',{className:'alert alert-info'},'Una vez configurado, todos los datos se sincronizan automáticamente y nunca los perdés.')
+  );
+
+  return h('div',{className:'content'},
+    h('p',{className:'section-title'},'Google Drive'),
+    !driveUser&&h('div',null,
+      h('div',{className:'alert alert-info'},'Conectá tu cuenta para que los datos se guarden en Drive y nunca se pierdan.'),
+      h('button',{className:'btn-google',onClick:signIn,disabled:syncStatus==='loading'},
+        h('svg',{className:'btn-google-logo',viewBox:'0 0 24 24'},
+          h('path',{d:'M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z',fill:'#4285F4'}),
+          h('path',{d:'M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z',fill:'#34A853'}),
+          h('path',{d:'M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z',fill:'#FBBC05'}),
+          h('path',{d:'M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z',fill:'#EA4335'})
+        ),
+        syncStatus==='loading'?'Conectando...':'Conectar con Google'
+      )
+    ),
+    driveUser&&h('div',null,
+      h('div',{className:'card'},
+        h('div',{className:'card-row'},
+          h('div',null,
+            h('div',{style:{fontWeight:700}},driveUser.name||driveUser.email),
+            h('div',{style:{fontSize:13,color:'var(--text2)'}},driveUser.email)
+          ),
+          h('div',{style:{width:40,height:40,borderRadius:20,background:'var(--blue-bg)',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,color:'var(--blue)',fontSize:16}},
+            (driveUser.name||driveUser.email||'?')[0].toUpperCase()
+          )
+        ),
+        h('div',{className:'divider'}),
+        h('div',{className:'card-row'},
+          h('span',{style:{fontSize:14,color:'var(--text2)'}},'Estado'),
+          h('span',{className:`badge ${syncStatus==='ok'?'badge-paid':syncStatus==='error'?'badge-pending':'badge-partial'}`},
+            syncStatus==='ok'?'✓ Sincronizado':syncStatus==='loading'?'Sincronizando...':'Error'
+          )
+        ),
+        lastSync&&h('div',{className:'card-row'},
+          h('span',{style:{fontSize:14,color:'var(--text2)'}},'Último sync'),
+          h('span',{style:{fontSize:14}},lastSync.toLocaleTimeString('es-AR'))
+        ),
+        driveFileId&&h('div',{className:'card-row'},
+          h('span',{style:{fontSize:13,color:'var(--text2)',fontFamily:'monospace'}},driveFileId.slice(0,20)+'...')
+        )
+      ),
+      h('button',{className:'btn-secondary',style:{marginBottom:8},onClick:pullFromDrive},'↓ Traer datos desde Drive'),
+
+      h('div',{className:'divider'}),
+      h('p',{className:'section-title'},'Compartir con otra persona'),
+      h('div',{className:'share-card'},
+        h('div',{className:'share-title'},'¿Cómo funciona el acceso compartido?'),
+        h('div',{className:'share-desc'},
+          'Hay dos maneras de que otra persona acceda a los mismos datos:',h('br'),h('br'),
+          h('strong','Opción A — Archivo compartido de Drive:'),' Hacé click en "Compartir archivo" y mandále el link. Al abrir la app con ese mismo Client ID, verá y editará los mismos datos.',h('br'),h('br'),
+          h('strong','Opción B — Mismo archivo HTML:'),' Compartís el archivo HTML que ya tiene el Client ID configurado. La otra persona lo abre, inicia sesión con su Google y automáticamente accede a los mismos datos.'
+        ),
+        !shareInfo&&h('button',{className:'btn-primary',style:{marginTop:0},onClick:handleShare,disabled:sharing},sharing?'Compartiendo...':'Compartir archivo en Drive'),
+        shareInfo&&h('div',null,
+          h('div',{style:{fontSize:13,color:'var(--green-text)',fontWeight:600,marginBottom:8}},'✓ Archivo compartido exitosamente'),
+          h('div',{className:'share-file'},shareInfo.webViewLink||shareInfo.id),
+          h('button',{className:'btn-secondary',onClick:()=>navigator.clipboard?.writeText(shareInfo.webViewLink||shareInfo.id)},'Copiar link')
+        )
+      ),
+      h('button',{className:'btn-danger',style:{marginTop:16},onClick:signOut},'Desconectar Drive')
+    )
+  );
+}
+
+// ── OTRAS PESTAÑAS ─────────────────────────────────────────────────
+function TabVariables({variables,setVar}){
+  const meses=[];
+  for(let i=-1;i<=3;i++){const d=new Date(NOW.getFullYear(),NOW.getMonth()+i,1);meses.push({year:d.getFullYear(),month:d.getMonth(),key:mesKey(d.getFullYear(),d.getMonth())})}
+  const fields=[{id:'dolar',label:'Dólar (ARS)',placeholder:'Ej: 1200'},{id:'nafta',label:'Litro nafta (ARS)',placeholder:'Ej: 950'},{id:'ipc',label:'IPC variación (%)',placeholder:'Ej: 4.5'}];
+  return h('div',{className:'content'},
+    h('p',{className:'section-title'},'Variables por mes'),
+    h('div',{className:'alert alert-info'},'Cargá una vez por mes. Se aplican automáticamente a todos los contratos.'),
+    meses.map(m=>{
+      const v=variables[m.key]||{};
+      const esActual=m.key===mesKey(NOW.getFullYear(),NOW.getMonth());
+      return h('div',{key:m.key,className:'var-card',style:{border:esActual?'2px solid var(--blue)':''}},
+        h('div',{className:'var-header'},
+          h('span',{className:'var-title'},mesLabel(m.year,m.month)),
+          esActual&&h('span',{style:{fontSize:12,background:'var(--blue-bg)',color:'var(--blue)',padding:'2px 8px',borderRadius:20,fontWeight:600}},'Actual')
+        ),
+        h('div',{className:'var-fields'},
+          fields.map(f=>h('div',{key:f.id,className:'var-row'},
+            h('span',{className:'var-label'},f.label),
+            h('input',{className:'var-input',type:'number',inputMode:'decimal',placeholder:f.placeholder,value:v[f.id]||'',onChange:(e)=>setVar(m.key,f.id,e.target.value)})
+          ))
+        )
+      );
+    })
+  );
+}
+
+function TabReporte({alquileres,pagos,variables}){
+  const[mes,setMes]=useState(mesKey(NOW.getFullYear(),NOW.getMonth()));
+  const[year,month]=mes.split('-').map(Number);
+  const mesObj={year,month:month-1};
+  const rows=alquileres.map(a=>{const esp=calcularMonto(a,mesObj.year,mesObj.month,variables);const est=estadoPago(a.id,mes,pagos,esp);return{a,esp,est}});
+  const totalEsp=rows.reduce((s,r)=>s+(r.esp||0),0);
+  const totalPag=rows.reduce((s,r)=>s+r.est.pagado,0);
+  const pagados=rows.filter(r=>r.est.estado==='pagado').length;
+  const pendientes=rows.filter(r=>r.est.estado==='pendiente').length;
+  const mesesDisp=[];
+  for(let i=-3;i<=6;i++){const d=new Date(NOW.getFullYear(),NOW.getMonth()+i,1);mesesDisp.push({key:mesKey(d.getFullYear(),d.getMonth()),label:mesLabel(d.getFullYear(),d.getMonth())})}
+  const exportar=()=>{
+    const lines=['AlquiGest — Reporte','Mes: '+mesLabel(mesObj.year,mesObj.month),'','Propiedad | Inquilino | Esperado | Pagado | Estado'];
+    rows.forEach(({a,esp,est})=>lines.push(`${a.propiedad} | ${a.inquilino} | ${fmt(esp)} | ${fmt(est.pagado)} | ${est.estado}`));
+    lines.push('','TOTAL ESPERADO: '+fmt(totalEsp),'TOTAL COBRADO: '+fmt(totalPag),'DEUDA: '+fmt(totalEsp-totalPag));
+    const blob=new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'});
+    const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='reporte_alquileres.txt';a.click();
+  };
+  return h('div',{className:'content'},
+    h('p',{className:'section-title'},'Reporte mensual'),
+    h('div',{className:'form-group'},h('select',{className:'form-select',value:mes,onChange:(e)=>setMes(e.target.value)},mesesDisp.map(m=>h('option',{key:m.key,value:m.key},m.label)))),
+    h('div',{className:'stats-row'},
+      h('div',{className:'stat-box'},h('div',{className:'stat-num',style:{color:'var(--green)'}},pagados),h('div',{className:'stat-label'},'Pagados')),
+      h('div',{className:'stat-box'},h('div',{className:'stat-num',style:{color:'var(--red)'}},pendientes),h('div',{className:'stat-label'},'Pendientes'))
+    ),
+    h('div',{className:'stats-row'},
+      h('div',{className:'stat-box'},h('div',{className:'stat-num'},fmt(totalPag)),h('div',{className:'stat-label'},'Total cobrado')),
+      h('div',{className:'stat-box'},h('div',{className:'stat-num',style:{color:'var(--red)'}},fmt(totalEsp-totalPag)),h('div',{className:'stat-label'},'Deuda total'))
+    ),
+    rows.length===0&&h('div',{className:'empty'},h('div',{className:'empty-icon'},'📊'),h('div',{className:'empty-msg'},'Sin alquileres')),
+    rows.map(({a,esp,est})=>h('div',{key:a.id,className:'card'},
+      h('div',{className:'card-row'},h('div',null,h('div',{style:{fontWeight:700,fontSize:15}},a.propiedad),h('div',{style:{fontSize:13,color:'var(--text2)'}},a.inquilino)),h(Badge,{estado:est.estado})),
+      h('div',{className:'card-row'},h('span',{style:{fontSize:13,color:'var(--text2)'}},'Esperado'),h('span',{style:{fontWeight:600}},fmt(esp))),
+      h('div',{className:'card-row'},h('span',{style:{fontSize:13,color:'var(--text2)'}},'Pagado'),h('span',{style:{fontWeight:600,color:est.pagado>=(esp||0)?'var(--green)':'var(--red)'}},fmt(est.pagado))),
+      est.diferencia<0&&h('div',{className:'card-row'},h('span',{style:{fontSize:13,color:'var(--text2)'}},'Debe'),h('span',{style:{fontWeight:700,color:'var(--red)'}},fmt(-est.diferencia)))
+    )),
+    alquileres.length>0&&h('button',{className:'btn-secondary',style:{marginTop:8},onClick:exportar},'⬇ Exportar reporte (.txt)')
+  );
+}
+
+function TabDashboard({alquileres,pagos,variables,onEditAlquiler,onPagar,onHistorial}){
+  const mesActualKey=mesKey(NOW.getFullYear(),NOW.getMonth());
+  const rows=alquileres.map(a=>{const esp=calcularMonto(a,NOW.getFullYear(),NOW.getMonth(),variables);const est=estadoPago(a.id,mesActualKey,pagos,esp);return{a,esp,est}});
+  const total=rows.reduce((s,r)=>s+(r.esp||0),0);
+  const cobrado=rows.reduce((s,r)=>s+r.est.pagado,0);
+  return h('div',{className:'content'},
+    h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}},
+      h('div',null,h('p',{style:{fontSize:13,color:'var(--text2)'}},'Mes actual'),h('p',{style:{fontSize:18,fontWeight:800}},mesLabel(NOW.getFullYear(),NOW.getMonth()))),
+      alquileres.length>0&&h('div',{style:{textAlign:'right'}},h('p',{style:{fontSize:12,color:'var(--text2)'}},'Cobrado / Esperado'),h('p',{style:{fontSize:15,fontWeight:700}},fmt(cobrado)+' / '+fmt(total)))
+    ),
+    alquileres.length===0&&h('div',{className:'empty'},h('div',{className:'empty-icon'},'🏠'),h('div',{className:'empty-msg'},'Sin alquileres'),h('div',{className:'empty-sub'},'Tocá + para agregar tu primer alquiler')),
+    rows.map(({a,esp,est})=>h('div',{key:a.id,className:'prop-card'},
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:4}},
+        h('div',null,h('div',{className:'prop-name'},a.propiedad),h('div',{className:'prop-tenant'},a.inquilino)),
+        h(Badge,{estado:est.estado})
+      ),
+      h('div',{style:{marginBottom:8}},
+        h('span',{className:`tag tag-${a.contrato.tipo}`},a.contrato.tipo==='fijo'?'Fijo':'Escalonado'),
+        a.contrato.ajuste&&a.contrato.ajuste!=='ninguno'&&h('span',{className:'tag tag-ajuste',style:{marginLeft:4}},a.contrato.ajuste)
+      ),
+      h('div',{className:'prop-amounts'},
+        h('div',{className:'amount-box'},h('div',{className:'amount-label'},'Esperado'),h('div',{className:'amount-val'},esp==null?'—':fmt(esp))),
+        h('div',{className:'amount-box'},h('div',{className:'amount-label'},'Pagado'),h('div',{className:`amount-val ${est.pagado===0?'red':est.pagado>=(esp||0)?'green':'yellow'}`},fmt(est.pagado))),
+        h('div',{className:'amount-box'},h('div',{className:'amount-label'},'Diferencia'),h('div',{className:`amount-val ${est.diferencia>=0?'green':'red'}`},est.diferencia===0?'—':((est.diferencia>0?'+':'')+fmt(est.diferencia))))
+      ),
+      h('div',{className:'prop-actions'},
+        h('button',{className:'btn-pay',onClick:()=>onPagar(a,{year:NOW.getFullYear(),month:NOW.getMonth(),key:mesActualKey},esp,pagos[`${a.id}_${mesActualKey}`])},est.estado==='pagado'?'✓ Pago registrado':'Registrar pago'),
+        h('button',{className:'btn-hist',onClick:()=>onHistorial(a)},'📋'),
+        h('button',{className:'btn-hist',onClick:()=>onEditAlquiler(a)},'✎')
+      )
+    ))
+  );
+}
+
+// ── APP ROOT ───────────────────────────────────────────────────────
+function App(){
+  const store=useStore();
+  const{alquileres,pagos,variables,addAlquiler,updateAlquiler,deleteAlquiler,registrarPago,deletePago,setVar,
+        driveUser,syncStatus,lastSync,driveFileId,signIn,signOut,pullFromDrive}=store;
+  const[tab,setTab]=useState('home');
+  const[modal,setModal]=useState(null);
+  const closeModal=()=>setModal(null);
+  const TABS=[
+    {id:'home',icon:'🏠',label:'Inicio'},
+    {id:'vars',icon:'📈',label:'Variables'},
+    {id:'report',icon:'📊',label:'Reporte'},
+    {id:'drive',icon:'☁️',label:'Drive'},
+  ];
+  const initials=driveUser?(driveUser.name||driveUser.email||'?')[0].toUpperCase():null;
+
+  return h('div',null,
+    h('div',{className:'nav'},
+      h('div',{className:'nav-title'},'AlquiGest'),
+      driveUser&&h('button',{className:'nav-user',onClick:()=>setTab('drive'),title:driveUser.email},initials),
+      !driveUser&&h('button',{className:'nav-sync',onClick:()=>setTab('drive')},'☁ Drive')
+    ),
+    h(SyncBar,{status:syncStatus,lastSync,user:driveUser,onPull:pullFromDrive}),
+    h('div',{className:'tabs'},TABS.map(t=>h('button',{key:t.id,className:`tab ${tab===t.id?'active':''}`,onClick:()=>setTab(t.id)},h('span',{className:'tab-icon'},t.icon),t.label))),
+    tab==='home'&&h(TabDashboard,{alquileres,pagos,variables,onEditAlquiler:(a)=>setModal({type:'form',data:a}),onPagar:(a,m,esp,pago)=>setModal({type:'pago',alquiler:a,mes:m,montoEsperado:esp,pagoActual:pago}),onHistorial:(a)=>setModal({type:'hist',alquiler:a})}),
+    tab==='vars'&&h(TabVariables,{variables,setVar}),
+    tab==='report'&&h(TabReporte,{alquileres,pagos,variables}),
+    tab==='drive'&&h(TabDrive,{driveUser,syncStatus,lastSync,driveFileId,signIn,signOut,pullFromDrive,drive:store.drive}),
+    tab==='home'&&h('button',{className:'fab',onClick:()=>setModal({type:'form',data:null})},'+'),
+    modal?.type==='form'&&h(FormAlquiler,{initial:modal.data,onSave:(data)=>{modal.data?updateAlquiler(modal.data.id,data):addAlquiler(data)},onDelete:()=>deleteAlquiler(modal.data.id),onClose:closeModal}),
+    modal?.type==='pago'&&h(ModalPago,{alquiler:modal.alquiler,mes:modal.mes,montoEsperado:modal.montoEsperado,pagoActual:modal.pagoActual,onClose:closeModal,onSave:(monto)=>registrarPago(modal.alquiler.id,modal.mes.key,monto,modal.montoEsperado),onDelete:()=>deletePago(modal.alquiler.id,modal.mes.key)}),
+    modal?.type==='hist'&&h(Historial,{alquiler:modal.alquiler,pagos,variables,onClose:closeModal,onRegistrar:(m,esp,pago)=>setModal({type:'pago',alquiler:modal.alquiler,mes:m,montoEsperado:esp,pagoActual:pago})})
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+</script>
+</body>
+</html>
